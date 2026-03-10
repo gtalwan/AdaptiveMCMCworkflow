@@ -1,0 +1,10 @@
+Package: AdaptiveMCMCworkflow
+Type: Package
+Title: Adaptive MCMC Workflow
+Version: 0.0.0.9000
+Authors@R: person("Gabriel", "Alwan", email = "gtalwan@users.noreply.github.com", role = c("aut", "cre"))
+Description: Infrastructure-only package scaffold for future Rcpp development.
+License: GPL-3
+Encoding: UTF-8
+Imports: Rcpp
+LinkingTo: Rcpp
