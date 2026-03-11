@@ -245,7 +245,7 @@ graphics::persp(
 )
 
 
-# STEP 4: CHECK THE INPUTS YOU CHOSE -----------------------------------
+# INPUTS 
 
 initial_state
 S_0
@@ -256,7 +256,7 @@ target_acceptance
 gamma
 
 
-# STEP 5: RUN BASIC METROPOLIS ----------------------------------------
+# RUN BASIC METROPOLIS 
 
 basic_run <- basic_metropolis(
   target_density = target$density,
@@ -269,7 +269,7 @@ basic_summary <- summarize_sampler_run(basic_run, burn_in = burn_in)
 basic_summary
 
 
-# STEP 5A: HOW TO READ THIS SUMMARY TABLE ------------------------------
+# DICTIONARY
 #
 # This target is two-dimensional, so the summary has one row for coordinate 1
 # and one row for coordinate 2.
@@ -290,7 +290,7 @@ basic_summary
 # effective_sample_size:
 #   the rough number of independent-equivalent draws after accounting for
 #   autocorrelation.
-#   If you keep 800 draws but the ESS is only about 8 or 30, the chain is
+#   If you keep 800 draws but the ESS is only about 10, the chain is
 #   carrying much less information than 800 independent draws would.
 #
 # Why these metrics matter:
@@ -320,7 +320,7 @@ plot_acf_chain(basic_run, dim = 1, lag_max = 20, burn_in = burn_in)
 plot_acceptance(basic_run, window = 50)
 
 
-# STEP 6: RUN ADAPTIVE METROPOLIS -------------------------------------
+# RUN ADAPTIVE METROPOLIS 
 
 am_run <- adaptive_metropolis(
   target_density = target$density,
@@ -337,7 +337,7 @@ am_summary
 # That is expected because the proposal changes during the early adaptation
 # period and the summary table intentionally drops those burn-in iterations.
 am_run$acceptance_rate
-am_summary$acceptance_rate[1]
+
 
 plot_sampler_path(target, am_run, burn_in = burn_in, main = "Adaptive Metropolis path")
 plot_trace(am_run, burn_in = burn_in)
@@ -444,7 +444,6 @@ summary_by_algorithm <- do.call(
 
 summary_by_algorithm
 
-# How to use this comparison table:
 # - acceptance_rate is the overall move rate after burn-in.
 #   For DRAM, this includes both stage-one accepts and stage-two rescue accepts.
 # - second_stage_accept_rate is conditional on stage two being attempted.
@@ -457,7 +456,7 @@ summary_by_algorithm
 #   reasonable acceptance, lower autocorrelation, and higher ESS.
 
 
-# STEP 10: CHECK ADAPTIVE-MCMC ASSUMPTIONS EMPIRICALLY -----------------
+# SCHECK ADAPTIVE-MCMC ASSUMPTIONS EMPIRICALLY 
 #
 # These are empirical diagnostics, not proofs.
 # We check:

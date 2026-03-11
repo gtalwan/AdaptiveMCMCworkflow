@@ -2,6 +2,10 @@
 # package is meant to be read by learners. The goal is to keep argument checks
 # and common bookkeeping tidy without hiding the statistical ideas.
 
+
+#TODO CONVERT TO RCCP
+
+
 #' @noRd
 `%||%` <- function(left, right) {
   if (is.null(left)) {
@@ -255,6 +259,8 @@ draws_after_burn_in <- function(run, burn_in = 0L) {
 
 #' @noRd
 acf_values_internal <- function(series, lag_max) {
+  # Return only the positive lags. Lag 0 is always 1, so it is not useful when
+  # we want to describe how strongly the chain depends on its past values.
   stats::acf(
     as.numeric(series),
     lag.max = lag_max,
@@ -268,13 +274,19 @@ effective_sample_size_internal <- function(series, lag_max = NULL) {
   series <- as.numeric(series)
   sample_size <- length(series)
 
+  # With fewer than 3 draws there is not enough information to estimate
+  # autocorrelation in a meaningful way.
   if (sample_size < 3L) {
     return(NA_real_)
   }
 
+  # Use a moderate truncation lag by default. The goal here is a simple,
+  # teaching-oriented ESS calculation rather than a highly optimized one.
   lag_max <- lag_max %||% min(100L, sample_size - 1L)
   lag_max <- min(as.integer(lag_max), sample_size - 1L)
 
+  # If there are no positive lags to inspect, then the chain is treated like
+  # independent draws and ESS equals the raw sample size.
   if (lag_max < 1L) {
     return(as.numeric(sample_size))
   }
@@ -285,6 +297,8 @@ effective_sample_size_internal <- function(series, lag_max = NULL) {
     return(as.numeric(sample_size))
   }
 
+  # Use the initial positive sequence idea: once the sample ACF becomes
+  # non-positive, stop adding more lags to the integrated autocorrelation time.
   first_non_positive <- match(TRUE, autocorrelations <= 0, nomatch = length(autocorrelations) + 1L)
 
   positive_part <- if (first_non_positive == 1L) {
@@ -293,6 +307,9 @@ effective_sample_size_internal <- function(series, lag_max = NULL) {
     autocorrelations[seq_len(first_non_positive - 1L)]
   }
 
+  # ESS is sample size divided by the integrated autocorrelation time:
+  # n_eff = n / (1 + 2 * sum_{k >= 1} rho_k).
+  # Large positive autocorrelation inflates the denominator and reduces ESS.
   integrated_autocorrelation_time <- 1 + 2 * sum(positive_part)
   sample_size / integrated_autocorrelation_time
 }

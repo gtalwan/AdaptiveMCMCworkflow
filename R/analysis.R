@@ -24,10 +24,15 @@
 #' @export
 summarize_sampler_run <- function(run, burn_in = 0L, ess_max_lag = NULL) {
   run <- validate_sampler_run(run)
+
+  # Drop the early part of the chain before computing summary diagnostics.
+  # This makes the table line up with the way burn-in is explained in the demo.
   kept_draws <- draws_after_burn_in(run, burn_in = burn_in)
   kept_index <- seq.int(from = burn_in + 1L, to = run$n_iter)
   kept_accepted <- run$accepted[kept_index]
 
+  # Autocorrelation is a coordinate-wise diagnostic, so we compute it
+  # separately for each column of the chain matrix.
   lag_one_acf <- vapply(
     seq_len(ncol(kept_draws)),
     function(index) {
@@ -37,6 +42,8 @@ summarize_sampler_run <- function(run, burn_in = 0L, ess_max_lag = NULL) {
     numeric(1)
   )
 
+  # ESS is also coordinate-specific. Each component can mix at a different
+  # rate, especially on anisotropic targets such as correlated Gaussian ridges.
   ess <- vapply(
     seq_len(ncol(kept_draws)),
     function(index) {
@@ -49,11 +56,20 @@ summarize_sampler_run <- function(run, burn_in = 0L, ess_max_lag = NULL) {
     algorithm = run$algorithm,
     coordinate = seq_len(ncol(kept_draws)),
     iterations_used = nrow(kept_draws),
+    # This is the realised move rate after burn-in. For DRAM this includes
+    # both ordinary stage-one accepts and rescued stage-two accepts.
     acceptance_rate = mean(kept_accepted),
+    # Jump distance is Euclidean distance between successive realised states.
+    # Tiny average jumps often indicate slow exploration even if acceptance is high.
     mean_jump_distance = mean(run$jump_distance[kept_index]),
+    # Lag-1 autocorrelation asks how similar one draw is to the very next draw.
+    # Values close to 1 mean the chain is sticky.
     lag1_autocorrelation = lag_one_acf,
+    # ESS converts the autocorrelated chain into an "independent-equivalent"
+    # sample size. This is usually more informative than acceptance alone.
     effective_sample_size = ess,
     final_target_value = utils::tail(run$target_values[kept_index], 1L),
+    # For non-DRAM runs these stage-specific columns are NA by construction.
     stage_one_accept_rate = if ("stage_one_accepted" %in% names(run)) {
       mean(run$stage_one_accepted[kept_index])
     } else {
@@ -67,6 +83,8 @@ summarize_sampler_run <- function(run, burn_in = 0L, ess_max_lag = NULL) {
     second_stage_accept_rate = if ("stage_two_accepted" %in% names(run)) {
       attempted <- run$second_stage_attempted[kept_index]
       if (any(attempted)) {
+        # Conditional DRAM rescue success rate:
+        # among the iterations that actually reached stage two, how many moved?
         mean(run$stage_two_accepted[kept_index][attempted])
       } else {
         NA_real_
@@ -75,6 +93,8 @@ summarize_sampler_run <- function(run, burn_in = 0L, ess_max_lag = NULL) {
       NA_real_
     },
     second_stage_move_rate = if ("stage_two_accepted" %in% names(run)) {
+      # Unconditional DRAM stage-two contribution:
+      # the share of kept iterations rescued at the second stage.
       mean(run$stage_two_accepted[kept_index])
     } else {
       NA_real_
@@ -314,6 +334,9 @@ diminishing_adaptation_diagnostic <- function(run) {
   run <- validate_sampler_run(run)
   magnitude <- as.numeric(run$adaptation_magnitude)
 
+  # The raw adaptation magnitude records how much the proposal changed at each
+  # step. The cumulative mean smooths that sequence so longer-run trends are
+  # easier to inspect in a plot.
   data.frame(
     iteration = seq_along(magnitude),
     adaptation_magnitude = magnitude,
@@ -348,11 +371,15 @@ containment_diagnostic <- function(run) {
   dimension <- dim(history)[1]
 
   for (iteration in seq_len(n_iter)) {
+    # Pull out the proposal covariance used at this iteration.
     covariance <- matrix(
       history[, , iteration, drop = TRUE],
       nrow = dimension,
       ncol = dimension
     )
+
+    # The eigenvalues describe the proposal scale in the principal directions.
+    # We reuse them to form several containment-style diagnostics.
     eigenvalues <- eigen(covariance, symmetric = TRUE, only.values = TRUE)$values
     min_eigenvalue[iteration] <- min(eigenvalues)
     max_eigenvalue[iteration] <- max(eigenvalues)
@@ -360,7 +387,14 @@ containment_diagnostic <- function(run) {
     log_determinant[iteration] <- as.numeric(
       determinant(covariance, logarithm = TRUE)$modulus
     )
+
+    # The condition number measures anisotropy:
+    # large / small eigenvalue. It grows when the proposal becomes much more
+    # stretched in one direction than another.
     condition_number[iteration] <- max_eigenvalue[iteration] / min_eigenvalue[iteration]
+
+    # The square roots of the diagonal entries are marginal proposal standard
+    # deviations. Their average is a compact summary of overall proposal scale.
     average_marginal_sd[iteration] <- sqrt(mean(diag(covariance)))
   }
 
@@ -419,12 +453,18 @@ summarize_adaptive_validity <- function(object,
   run <- validate_sampler_run(object)
   diminishing <- diminishing_adaptation_diagnostic(run)
   containment <- containment_diagnostic(run)
+
+  # Find the first iteration where adaptation is actually nonzero. This avoids
+  # comparing "early" and "late" windows that still include fixed pre-adaptation
+  # iterations.
   first_adaptive_iteration <- match(TRUE, diminishing$adaptation_magnitude > 0)
 
   if (is.na(first_adaptive_iteration)) {
     first_adaptive_iteration <- 1L
   }
 
+  # Compare an early adaptive window against a late window. The ratio
+  # late / early is a simple empirical proxy for diminishing adaptation.
   early_window <- min(early_window, nrow(diminishing) - first_adaptive_iteration + 1L)
   late_window <- min(late_window, nrow(diminishing))
   early_slice <- seq.int(
@@ -435,6 +475,9 @@ summarize_adaptive_validity <- function(object,
   late_mean <- mean(utils::tail(diminishing$adaptation_magnitude, late_window))
   kernel_change_ratio <- if (early_mean > 0) late_mean / early_mean else NA_real_
 
+  # This table is intentionally cautious. It summarizes whether adaptation got
+  # smaller and whether the proposal covariance stayed numerically reasonable.
+  # It does not prove containment or ergodicity.
   data.frame(
     algorithm = run$algorithm,
     early_mean_kernel_change = early_mean,
