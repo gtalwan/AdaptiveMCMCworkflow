@@ -1,10 +1,28 @@
-Package: AdaptiveMCMCworkflow
+Package: AdaptiveMCMCWorkflow
 Type: Package
-Title: Adaptive MCMC Workflow
-Version: 0.0.0.9000
+Title: Educational Adaptive Markov Chain Monte Carlo Algorithms
+Version: 0.1.0.9000
 Authors@R: person("Gabriel", "Alwan", email = "gtalwan@users.noreply.github.com", role = c("aut", "cre"))
-Description: Infrastructure-only package scaffold for future Rcpp development.
+Description: Teaching-oriented implementations of basic Metropolis,
+    Adaptive Metropolis, Robust Adaptive Metropolis, and Delayed Rejection
+    Adaptive Metropolis. The computational kernels are written in C++ with
+    RcppArmadillo, while targets, summaries, plots, diagnostics, and examples
+    are implemented in R to keep each algorithm readable and easy to study.
 License: file LICENSE
 Encoding: UTF-8
-Imports: Rcpp
-LinkingTo: Rcpp
+Depends:
+    R (>= 4.2.0)
+Imports:
+    Rcpp
+LinkingTo:
+    Rcpp,
+    RcppArmadillo
+Suggests:
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+URL: https://github.com/gtalwan/AdaptiveMCMCworkflow
+BugReports: https://github.com/gtalwan/AdaptiveMCMCworkflow/issues
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Config/testthat/edition: 3

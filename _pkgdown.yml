@@ -1,0 +1,45 @@
+template:
+  bootstrap: 5
+
+reference:
+  - title: Samplers
+    contents:
+      - run_metropolis
+      - run_adaptive_metropolis
+      - run_ram
+      - run_dram
+      - basic_metropolis
+      - adaptive_metropolis
+      - robust_adaptive_metropolis
+      - dram
+  - title: Targets
+    contents:
+      - make_standard_normal_target
+      - make_small_scale_target
+      - make_correlated_gaussian_target
+      - make_correlated_t_target
+      - make_dram_rescue_target
+      - make_multimodal_target
+      - make_high_dimensional_gaussian_target
+      - make_gaussian_target
+  - title: Summaries And Comparison
+    contents:
+      - adaptive_mcmc_workflow
+      - compare_adaptive_methods
+      - summarize_chain
+      - summarize_sampler_run
+      - summarize_sampler_suite
+      - effective_sample_size_summary
+      - benchmark_sampler_suite
+  - title: Diagnostics And Plots
+    contents:
+      - plot_trace
+      - plot_acf_chain
+      - plot_acceptance
+      - plot_covariance_evolution
+      - plot_mode_switching_behavior
+      - plot_sampler_comparison
+      - plot_adaptation_diagnostic
+      - plot_containment_diagnostic
+      - diminishing_adaptation_diagnostic
+      - containment_diagnostic

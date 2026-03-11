@@ -2,8 +2,17 @@
 .RData
 .Ruserdata
 .Rproj.user
+*.Rproj
+.DS_Store
 *.tar.gz
 *.Rcheck/
+vignettes/*.pdf
+vignettes/*.tex
+vignettes/*.aux
+vignettes/*.log
+vignettes/*.out
+vignettes/*.toc
+vignettes/*.synctex.gz
 src/*.o
 src/*.so
 src/*.dll
