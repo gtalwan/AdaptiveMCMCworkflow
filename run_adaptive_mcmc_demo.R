@@ -126,7 +126,7 @@ n_iter <- 1000
 burn_in <- 200
 adapt_start <- 30
 target_acceptance <- 0.234
-gamma <- 0.5
+gamma <- 0.6
 
 
 # STEP 2: BUILD THE CORRELATED GAUSSIAN TARGET -------------------------
@@ -261,7 +261,7 @@ gamma
 basic_run <- basic_metropolis(
   target_density = target$density,
   initial_state = initial_state,
-  n_iter = n_iter,
+  n_iter = 10000,
   proposal_covariance = S_0
 )
 
@@ -325,7 +325,7 @@ plot_acceptance(basic_run, window = 50)
 am_run <- adaptive_metropolis(
   target_density = target$density,
   initial_state = initial_state,
-  n_iter = 10000,
+  n_iter = 1000,
   initial_proposal_covariance = S_0,
   adapt_start = adapt_start
 )
@@ -365,7 +365,7 @@ plot_acceptance(ram_run, window = 50)
 
 
 # STEP 8: RUN DRAM -----------------------------------------------------
-
+rbenchmark::benchmark(
 dram_run <- dram(
   target_density = target$density,
   initial_state = initial_state,
@@ -373,6 +373,13 @@ dram_run <- dram(
   initial_proposal_covariance = S_0,
   adapt_start = adapt_start,
   delayed_rejection_scale = gamma
+), ram_run <- robust_adaptive_metropolis(
+  target_density = target$density,
+  initial_state = initial_state,
+  n_iter = 10000,
+  initial_proposal_covariance = S_0,
+  target_acceptance = target_acceptance
+)
 )
 
 dram_summary <- summarize_sampler_run(dram_run, burn_in = burn_in)
@@ -456,12 +463,18 @@ summary_by_algorithm
 #   reasonable acceptance, lower autocorrelation, and higher ESS.
 
 
-# SCHECK ADAPTIVE-MCMC ASSUMPTIONS EMPIRICALLY 
+# CHECK ADAPTIVE-MCMC ASSUMPTIONS EMPIRICALLY 
 #
 # These are empirical diagnostics, not proofs.
 # We check:
 # 1. whether adaptation becomes smaller later in the run,
 # 2. whether the adaptive proposal covariance stays finite and well behaved.
+#
+# In the plots below, "kernel change" means:
+#   ||S_n - S_(n-1)||_F
+# where S_n is the current proposal covariance matrix.
+# If that curve gets smaller later in the run, that is empirical evidence
+# consistent with diminishing adaptation.
 
 validity_table <- rbind(
   summarize_adaptive_validity(am_run, early_window = 100, late_window = 100),
@@ -480,6 +493,10 @@ graphics::plot(
   ylab = "Kernel change",
   main = "Adaptive Metropolis: adaptation magnitude"
 )
+
+# Read this plot as:
+# - high values early on: the adaptive kernel is still changing a lot
+# - lower values later on: the adaptive kernel is settling down
 
 am_containment <- containment_diagnostic(am_run)
 graphics::plot(

@@ -320,6 +320,8 @@ benchmark_sampler_suite <- function(target,
 #'
 #' This function reports a practical proxy for diminishing adaptation: the
 #' Frobenius norm difference between successive proposal covariance matrices.
+#' In this package, that quantity is called the "kernel change" because the
+#' proposal covariance is part of the transition kernel of the adaptive chain.
 #'
 #' @param run A sampler result created by this package.
 #'
@@ -335,8 +337,9 @@ diminishing_adaptation_diagnostic <- function(run) {
   magnitude <- as.numeric(run$adaptation_magnitude)
 
   # The raw adaptation magnitude records how much the proposal changed at each
-  # step. The cumulative mean smooths that sequence so longer-run trends are
-  # easier to inspect in a plot.
+  # step. Here "kernel change" means ||S_n - S_(n-1)||_F, the Frobenius norm of
+  # the change in proposal covariance. The cumulative mean smooths that
+  # sequence so longer-run trends are easier to inspect in a plot.
   data.frame(
     iteration = seq_along(magnitude),
     adaptation_magnitude = magnitude,
@@ -478,6 +481,10 @@ summarize_adaptive_validity <- function(object,
   # This table is intentionally cautious. It summarizes whether adaptation got
   # smaller and whether the proposal covariance stayed numerically reasonable.
   # It does not prove containment or ergodicity.
+  #
+  # kernel_change_ratio:
+  #   late mean kernel change / early mean kernel change.
+  # Values below 1 suggest the adaptive updates are smaller later in the run.
   data.frame(
     algorithm = run$algorithm,
     early_mean_kernel_change = early_mean,
